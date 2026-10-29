@@ -155,6 +155,7 @@ export const en = {
   'terminal.keys': 'Terminal keys',
   'terminal.banner1': 'a shell with the real xray, compiled to WebAssembly, running in this tab.',
   'terminal.banner2': 'Nothing you type leaves the browser. The first xray command downloads the core (about 12 MB) once.',
+  'terminal.try': 'Try:',
   'terminal.editorHint': 'Saved as you type; the Check page and the terminal see the same file.',
   'terminal.downloadFile': 'Download',
 

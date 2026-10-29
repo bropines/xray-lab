@@ -153,6 +153,7 @@ export const ru: Dictionary = {
   'terminal.keys': 'Клавиши терминала',
   'terminal.banner1': 'оболочка с настоящим xray, скомпилированным в WebAssembly, прямо в этой вкладке.',
   'terminal.banner2': 'Всё, что вы вводите, остаётся в браузере. Первая команда xray один раз скачает ядро (около 12 МБ).',
+  'terminal.try': 'Попробуйте:',
   'terminal.editorHint': 'Сохраняется по мере ввода; страница проверки и терминал видят один и тот же файл.',
   'terminal.downloadFile': 'Скачать',
 

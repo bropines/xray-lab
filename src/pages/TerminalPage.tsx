@@ -202,7 +202,7 @@ export default function TerminalPage() {
       if (disposed || !host.current) return;
       term.open(host.current);
       fit.fit();
-      term.write(crlfBanner(t('terminal.banner1'), t('terminal.banner2')));
+      term.write(crlfBanner(t('terminal.banner1'), t('terminal.banner2'), t('terminal.try')));
       editor.start();
       if (!phone) term.focus();
     });
@@ -217,8 +217,47 @@ export default function TerminalPage() {
     });
     ro.observe(host.current);
 
+    // xterm.js scrolls with a wheel but not with a finger: on a phone the
+    // scrollback could not be reached at all. A one-finger drag scrolls by
+    // lines here instead, before xterm (a descendant) sees the move.
+    const el = host.current;
+    let touchY: number | null = null;
+    let carry = 0;
+    const lineHeight = () =>
+      (term.element?.querySelector('.xterm-rows > div') as HTMLElement | null)?.getBoundingClientRect().height || 16;
+    const onTouchStart = (e: TouchEvent) => {
+      touchY = e.touches.length === 1 ? (e.touches[0]?.clientY ?? null) : null;
+      carry = 0;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touchY === null || e.touches.length !== 1 || !touch) return;
+      const y = touch.clientY;
+      carry += touchY - y;
+      touchY = y;
+      const height = lineHeight();
+      const lines = Math.trunc(carry / height);
+      if (lines !== 0) {
+        term.scrollLines(lines);
+        carry -= lines * height;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const onTouchEnd = () => {
+      touchY = null;
+    };
+    el.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+    el.addEventListener('touchend', onTouchEnd, { capture: true });
+    el.addEventListener('touchcancel', onTouchEnd, { capture: true });
+
     return () => {
       disposed = true;
+      el.removeEventListener('touchstart', onTouchStart, { capture: true });
+      el.removeEventListener('touchmove', onTouchMove, { capture: true });
+      el.removeEventListener('touchend', onTouchEnd, { capture: true });
+      el.removeEventListener('touchcancel', onTouchEnd, { capture: true });
       ro.disconnect();
       sub.dispose();
       term.dispose();
@@ -348,6 +387,6 @@ function FileEditor({ path, lang, tag }: { path: string; lang: string; tag?: str
   );
 }
 
-function crlfBanner(line1: string, line2: string): string {
-  return `${C.bold}Xray Lab${C.reset} ${C.dim}— ${line1}${C.reset}\r\n${C.dim}${line2}${C.reset}\r\n${C.dim}Try:${C.reset} ${C.cyan}xray version${C.reset}  ${C.cyan}xray x25519${C.reset}  ${C.cyan}xray run -test -c config.json${C.reset}  ${C.cyan}help${C.reset}\r\n\r\n`;
+function crlfBanner(line1: string, line2: string, tryLabel: string): string {
+  return `${C.bold}Xray Lab${C.reset} ${C.dim}— ${line1}${C.reset}\r\n${C.dim}${line2}${C.reset}\r\n${C.dim}${tryLabel}${C.reset} ${C.cyan}xray version${C.reset}  ${C.cyan}xray x25519${C.reset}  ${C.cyan}xray run -test -c config.json${C.reset}  ${C.cyan}help${C.reset}\r\n\r\n`;
 }
