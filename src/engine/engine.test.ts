@@ -98,3 +98,11 @@ describe('Engine', () => {
     expect(maxActive).toBe(1);
   });
 });
+
+describe('fake uuid -i', () => {
+  test('matches what the real core printed for the same text', async () => {
+    // `xray uuid -i "my name"` on v26.10.21 (xray-wasm), recorded in the browser.
+    const { xrayUuidFromString } = await import('./fake');
+    expect(await xrayUuidFromString('my name')).toBe('e0620cf6-39ec-5866-9a28-eb85869c2f6f');
+  });
+});

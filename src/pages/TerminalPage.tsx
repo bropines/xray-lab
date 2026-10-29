@@ -86,6 +86,7 @@ const KEY_ROW: { label: string; data: string; aria: string }[] = [
   { label: '^L', data: '\x0c', aria: 'Ctrl+L' },
   { label: '-', data: '-', aria: 'Dash' },
   { label: '"', data: '"', aria: 'Quote' },
+  { label: '⏎', data: '\r', aria: 'Enter' },
 ];
 
 export default function TerminalPage() {

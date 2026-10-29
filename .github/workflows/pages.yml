@@ -1,0 +1,102 @@
+# Build the site and publish it to GitHub Pages.
+#
+# The engine is the xray-wasm package (package.json pins a release tarball).
+# The cores themselves are not part of this site: by default the page loads
+# them from the library's own Pages (https://bropines.github.io/xray-wasm/),
+# which sends Access-Control-Allow-Origin: *. Repository variables change that:
+#
+#   XRAY_WASM_RELEASE  "latest" — build with the newest xray-wasm release
+#                      instead of the pinned one (also a manual-run input).
+#   XRAY_WASM_BASE     a URL (or ./path) to load the cores from instead, or
+#                      "self" to copy the release's cores into this site
+#                      under ./xray-wasm/ (about 12 MB per version).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      xray_wasm:
+        description: 'xray-wasm release: "pinned" (package.json) or "latest"'
+        default: pinned
+        type: choice
+        options: [pinned, latest]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WANT_LATEST: ${{ inputs.xray_wasm == 'latest' || vars.XRAY_WASM_RELEASE == 'latest' }}
+      WASM_BASE: ${{ vars.XRAY_WASM_BASE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Choose the xray-wasm release
+        id: lib
+        run: |
+          if [ "$WANT_LATEST" = "true" ]; then
+            tag=$(gh release view --repo bropines/xray-wasm --json tagName --jq .tagName)
+            mkdir -p vendor
+            gh release download "$tag" --repo bropines/xray-wasm --pattern 'xray-wasm-*.tgz' --dir vendor --clobber
+            tarball=$(ls vendor/xray-wasm-*.tgz | head -n1)
+            npm pkg set "dependencies.xray-wasm=file:./$tarball"
+          else
+            tag=$(node -p "(require('./package.json').dependencies['xray-wasm'].match(/download\/(v[^/]+)\//) || [])[1] || ''")
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "xray-wasm release: ${tag:-unknown}"
+
+      - run: bun install
+
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun test
+
+      - name: Build
+        run: |
+          if [ "$WASM_BASE" = "self" ]; then export VITE_XRAY_WASM_BASE=./xray-wasm/;
+          elif [ -n "$WASM_BASE" ]; then export VITE_XRAY_WASM_BASE="$WASM_BASE"; fi
+          bun run build
+
+      - name: Copy the cores into the site (XRAY_WASM_BASE=self)
+        if: env.WASM_BASE == 'self'
+        run: |
+          mkdir -p dist/xray-wasm
+          gh release download "${{ steps.lib.outputs.tag }}" --repo bropines/xray-wasm \
+            --pattern 'manifest.json' --pattern 'wasm_exec.js' --pattern '*.xray.wasm.gz' \
+            --dir dist/xray-wasm --clobber
+          ls -la dist/xray-wasm
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
