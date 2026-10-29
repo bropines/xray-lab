@@ -203,7 +203,8 @@ body {
 /* The terminal fills its box; xterm draws its own scrollbar. */
 .xterm-host .xterm {
     height: 100%;
-    padding: 10px 0 10px 12px;
+    /* Room on the right for the overlay scrollbar. */
+    padding: 10px 14px 10px 12px;
 }
 .xterm-host .xterm-viewport {
     scrollbar-width: thin;

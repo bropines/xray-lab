@@ -31,6 +31,8 @@ export const C = {
 export interface ShellIO {
   write(text: string): void;
   clear(): void;
+  /** Terminal width, for output that must stay on one row. */
+  cols?(): number;
 }
 
 export interface ShellHost {
@@ -412,10 +414,15 @@ export class Shell {
       const s = engine.store.getState().tags[tag];
       if (!s || s.phase !== 'downloading') return;
       const pct = percent(s.loaded, s.total);
-      const width = 20;
-      const fill = Math.round((pct / 100) * width);
-      const verb = phase === 'cached' ? 'Loading' : 'Downloading';
-      this.io.write(`\r\x1b[K${C.dim}${verb} Xray ${tag} ${C.reset}[${'#'.repeat(fill)}${' '.repeat(width - fill)}] ${pct}% ${C.dim}${formatBytes(s.loaded)} / ${formatBytes(s.total)}${C.reset}`);
+      const verb = s.total > 0 && s.loaded >= s.total ? 'Compiling' : phase === 'cached' ? 'Loading' : 'Downloading';
+      // One terminal row, always: `\r\x1b[K` only clears the row the cursor is on.
+      const cols = this.io.cols?.() ?? 80;
+      const head = `${verb} ${tag} `;
+      const tail = ` ${String(pct).padStart(3)}% ${formatBytes(s.loaded)}/${formatBytes(s.total)}`;
+      const width = Math.min(24, cols - 1 - head.length - tail.length - 2);
+      const bar = width >= 4 ? `[${'#'.repeat(Math.round((pct / 100) * width)).padEnd(width)}]` : '';
+      const line = `${head}${bar}${tail}`.slice(0, Math.max(0, cols - 1));
+      this.io.write(`\r\x1b[K${C.dim}${line}${C.reset}`);
       drawn = true;
     };
     draw();

@@ -164,3 +164,21 @@ describe('Shell xray', () => {
     expect(s.shell.completions('cat con').candidates).toEqual(['config.json']);
   });
 });
+
+describe('download progress', () => {
+  test('stays on one row of a narrow terminal', async () => {
+    const engine = new Engine({ kind: 'fake', baseUrl: 'http://localhost/', create: async () => createFakeXray({}, { downloadMs: 60 }) });
+    let out = '';
+    const shell = new Shell({
+      engine,
+      fs: new SessionFs(null),
+      tag: 'v26.10.21',
+      io: { write: s => { out += s; }, clear: () => {}, cols: () => 30 },
+      host: { upload: async () => [], download: () => {}, edit: () => {} },
+    });
+    await shell.execute('xray version');
+    const frames = out.split('\r\x1b[K').slice(1, -1).map(plain).filter(f => f && !f.includes('\n'));
+    expect(frames.length).toBeGreaterThan(1);
+    for (const f of frames) expect(f.length).toBeLessThan(30);
+  });
+});

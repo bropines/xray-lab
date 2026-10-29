@@ -134,6 +134,7 @@ export default function TerminalPage() {
       io: {
         write: s => term.write(s),
         clear: () => term.write('\x1b[2J\x1b[3J\x1b[H'),
+        cols: () => term.cols,
       },
       host: {
         upload: async () => {
@@ -262,7 +263,7 @@ export default function TerminalPage() {
           <UploadSimpleIcon />
           <span className="max-sm:sr-only">{t('terminal.upload')}</span>
         </Button>
-        <Button size="sm" variant="ghost" onClick={() => { typeCommand('help'); send('\r'); }} aria-label={t('terminal.help')}>
+        <Button size="sm" variant="ghost" className="max-sm:hidden" onClick={() => { typeCommand('help'); send('\r'); }} aria-label={t('terminal.help')}>
           <QuestionIcon />
         </Button>
       </div>
