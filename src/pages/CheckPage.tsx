@@ -55,6 +55,8 @@ import { WhatLoadsMeans } from './check/WhatLoadsMeans';
 
 /** Above this, the page asks before downloading. */
 const CONFIRM_BYTES = 40_000_000;
+/** Chosen versions shown as chips before "+N more". */
+const CHIP_LIMIT = 6;
 const decoder = new TextDecoder();
 
 export default function CheckPage() {
@@ -72,6 +74,7 @@ export default function CheckPage() {
   const [share, setShare] = useState<{ url?: string; open: boolean }>({ open: false });
   const [dragging, setDragging] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [showAllChips, setShowAllChips] = useState(false);
 
   // Versions: from the link (`?versions=all|stable`), else remembered, else the defaults.
   const linkVersions = params.get('versions');
@@ -230,7 +233,8 @@ export default function CheckPage() {
                 onChange={setText}
                 ariaLabel={t('check.editorLabel')}
                 placeholder={t('check.placeholder')}
-                className="h-[min(60dvh,30rem)] lg:h-[calc(100dvh-15rem)] lg:min-h-[28rem]"
+                schemaTag={selected[0]}
+                className="h-[min(50dvh,30rem)] lg:h-[calc(100dvh-15rem)] lg:min-h-[28rem]"
               />
               {isEmpty && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
@@ -254,7 +258,13 @@ export default function CheckPage() {
                 {problem.line ? t('check.jsonErrorAt', { line: problem.line, column: problem.column ?? 1, message: problem.message }) : t('check.jsonError', { message: problem.message })}
               </p>
             ) : stripped.changed ? (
-              <p className="text-muted-foreground">{t('check.stripped', { comments: stripped.comments, commas: stripped.trailingCommas })}</p>
+              <p className="text-muted-foreground">
+                {stripped.trailingCommas === 0
+                  ? t('check.strippedComments', { comments: stripped.comments })
+                  : stripped.comments === 0
+                    ? t('check.strippedCommas', { commas: stripped.trailingCommas })
+                    : t('check.stripped', { comments: stripped.comments, commas: stripped.trailingCommas })}
+              </p>
             ) : (
               <p className="text-muted-foreground">{t('check.sharedWithTerminal')}</p>
             )}
@@ -289,7 +299,7 @@ export default function CheckPage() {
               </div>
               {selected.length > 0 && (
                 <ul className="flex flex-wrap gap-1.5" aria-label={t('check.selectedVersions')}>
-                  {selected.map(tag => {
+                  {(showAllChips ? selected : selected.slice(0, CHIP_LIMIT)).map(tag => {
                     const b = builds.find(x => x.tag === tag);
                     return (
                       <li key={tag} className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-0.5 pr-0.5 pl-2 font-mono text-xs">
@@ -308,6 +318,11 @@ export default function CheckPage() {
                     );
                   })}
                 </ul>
+              )}
+              {selected.length > CHIP_LIMIT && (
+                <Button size="sm" variant="ghost" className="-mt-2 h-7 px-2 text-xs" onClick={() => setShowAllChips(v => !v)} aria-expanded={showAllChips}>
+                  {showAllChips ? t('check.fewerVersions') : t('check.moreVersions', { n: selected.length - CHIP_LIMIT })}
+                </Button>
               )}
               <div className="flex flex-wrap items-center gap-2">
                 {running ? (

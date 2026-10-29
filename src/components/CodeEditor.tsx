@@ -6,6 +6,7 @@
  * config), so an underline here means the core would refuse to parse it.
  * Follows the site theme: one-dark in dark mode, the default style in light.
  */
+import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { json } from '@codemirror/lang-json';
 import { bracketMatching, defaultHighlightStyle, foldGutter, indentOnInput, syntaxHighlighting } from '@codemirror/language';
@@ -24,6 +25,8 @@ import {
 } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
 import { useTheme } from '../app/theme';
+import { loadSchema, type JsonSchema } from '../editor/schema';
+import { schemaCompletion } from '../editor/schema-completion';
 import { jsonProblem, stripJsonc } from '../lib/jsonc';
 
 interface Props {
@@ -33,6 +36,8 @@ interface Props {
   placeholder?: string;
   ariaLabel: string;
   className?: string;
+  /** Complete keys and values from the JSON Schema of this core version (xray-schema). */
+  schemaTag?: string;
 }
 
 const jsonLinter = linter(view => {
@@ -60,18 +65,31 @@ const baseTheme = EditorView.theme({
     backgroundColor: 'color-mix(in oklab, var(--primary) 28%, transparent) !important',
   },
   '.cm-cursor': { borderLeftColor: 'var(--foreground)' },
+  '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'var(--accent)', color: 'var(--accent-foreground)' },
+  '.cm-completionInfo': { maxWidth: '22rem', padding: '6px 8px', fontFamily: 'var(--font-sans)', fontSize: '12px', lineHeight: '1.45' },
+  '.cm-completionDetail': { marginLeft: '0.75em', color: 'var(--muted-foreground)', fontStyle: 'normal' },
   '.cm-foldPlaceholder': { backgroundColor: 'var(--muted)', border: 'none', color: 'var(--muted-foreground)' },
 });
 
 /** Syntax colours only; the surface comes from the page's tokens. */
 const highlightFor = (dark: boolean) => syntaxHighlighting(dark ? oneDarkHighlightStyle : defaultHighlightStyle);
 
-export function CodeEditor({ value, onChange, language = 'json', placeholder, ariaLabel, className }: Props) {
+export function CodeEditor({ value, onChange, language = 'json', placeholder, ariaLabel, className, schemaTag }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const themeSlot = useRef(new Compartment());
   const onChangeRef = useRef(onChange);
   const resolved = useTheme(s => s.resolved);
+  const schema = useRef<JsonSchema | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    schema.current = null;
+    if (schemaTag && language === 'json') void loadSchema(schemaTag).then(s => { if (live) schema.current = s; });
+    return () => {
+      live = false;
+    };
+  }, [schemaTag, language]);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -94,11 +112,13 @@ export function CodeEditor({ value, onChange, language = 'json', placeholder, ar
           bracketMatching(),
           highlightActiveLine(),
           highlightSelectionMatches(),
-          keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+          keymap.of([...completionKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
           EditorView.lineWrapping,
           baseTheme,
           themeSlot.current.of(highlightFor(dark)),
-          ...(language === 'json' ? [json(), jsonLinter, lintGutter()] : []),
+          ...(language === 'json'
+            ? [json(), jsonLinter, lintGutter(), autocompletion({ override: [schemaCompletion(() => schema.current)], icons: false })]
+            : []),
           ...(placeholder ? [placeholderExt(placeholder)] : []),
           EditorView.contentAttributes.of({ 'aria-label': ariaLabel }),
           EditorView.updateListener.of(u => {

@@ -302,14 +302,14 @@ export default function TerminalPage() {
 
       <Sheet open={!!editing} onOpenChange={open => !open && setEditing(null)}>
         <SheetContent side="right" className="w-full gap-0 sm:max-w-2xl">
-          {editing && <FileEditor path={editing} lang={lang} />}
+          {editing && <FileEditor path={editing} lang={lang} tag={tag} />}
         </SheetContent>
       </Sheet>
     </div>
   );
 }
 
-function FileEditor({ path, lang }: { path: string; lang: string }) {
+function FileEditor({ path, lang, tag }: { path: string; lang: string; tag?: string }) {
   const t = useT();
   const data = useFs(s => s.files[path]?.data);
   const text = data ? new TextDecoder().decode(data) : '';
@@ -332,6 +332,7 @@ function FileEditor({ path, lang }: { path: string; lang: string }) {
           onChange={v => sessionFs.write(path, v)}
           language={isJson ? 'json' : 'text'}
           ariaLabel={displayPath(path)}
+          schemaTag={tag}
           className="h-full"
         />
       </div>

@@ -9,6 +9,7 @@ const LINKS = {
   site: 'https://github.com/bropines/xray-lab',
   library: 'https://github.com/bropines/xray-wasm',
   core: 'https://github.com/XTLS/Xray-core',
+  schema: 'https://github.com/bropines/xray-schema',
   prior: 'https://github.com/mmmray/xray-online',
   xterm: 'https://xtermjs.org/',
   codemirror: 'https://codemirror.net/',
@@ -129,6 +130,9 @@ export default function AboutPage() {
           </li>
           <li>
             <Ext href={LINKS.library}>xray-wasm</Ext> — {t('about.linkLibrary')}
+          </li>
+          <li>
+            <Ext href={LINKS.schema}>xray-schema</Ext> — {t('about.linkSchema')}
           </li>
           <li>
             <Ext href={LINKS.core}>XTLS/Xray-core</Ext> — {t('about.linkCore')}

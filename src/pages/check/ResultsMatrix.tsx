@@ -10,6 +10,7 @@
 import {
   CaretRightIcon,
   CircleDashedIcon,
+  CloudArrowDownIcon,
   CircleNotchIcon,
   FileArrowUpIcon,
   WarningCircleIcon,
@@ -24,6 +25,9 @@ import { cn } from '../../lib/cn';
 import { formatBytes, formatMs, percent } from '../../lib/format';
 import type { Row } from './check-store';
 import { VERDICT_LABEL, VERDICT_STYLE } from './verdicts';
+import { isGeoName, useGeo } from './geo-store';
+import { useFs } from '../../fs';
+import { GEO_FILES } from '../../lib/geo';
 
 /**
  * The core's errors are a chain, outermost first: "main: failed to load
@@ -135,6 +139,10 @@ function ResultRow({
   const [open, setOpen] = useState<boolean | null>(null);
   const isOpen = open ?? defaultOpen;
   const r = row.result;
+  const files = useFs(st => st.files);
+  const geoFetching = useGeo(st => st.fetching);
+  const fetchGeo = useGeo(st => st.fetch);
+  const allPresent = !!r?.missingFiles?.length && r.missingFiles.every(f => !!files[f]);
   const hasDetail = !!r && (r.verdict !== 'ok' || !!r.skipped?.length || r.log.length > 0);
   const downloading = row.status === 'running' && tagState?.phase === 'downloading';
 
@@ -145,10 +153,14 @@ function ResultRow({
   if (row.status === 'running') {
     Icon = CircleNotchIcon;
     tone = 'text-primary animate-spin';
-    label = downloading ? t('results.downloading') : t('results.checking');
-    line = downloading
-      ? `${percent(tagState.loaded, tagState.total)}% · ${formatBytes(tagState.loaded, lang)} / ${formatBytes(tagState.total, lang)}`
-      : t('results.checkingLine');
+    // At 100% the binary is downloaded and being compiled (a few seconds for 60 MB).
+    const compiling = downloading && tagState.total > 0 && tagState.loaded >= tagState.total;
+    label = compiling ? t('results.compiling') : downloading ? t('results.downloading') : t('results.checking');
+    line = compiling
+      ? t('results.compilingLine')
+      : downloading
+        ? `${percent(tagState.loaded, tagState.total)}% · ${formatBytes(tagState.loaded, lang)} / ${formatBytes(tagState.total, lang)}`
+        : t('results.checkingLine');
   } else if (row.status === 'cancelled') {
     label = t('results.cancelled');
     line = t('results.cancelledLine');
@@ -218,11 +230,27 @@ function ResultRow({
                 ))}
               </ul>
               <div className="flex flex-wrap gap-2">
+                {(r.missingFiles ?? []).map(f => {
+                  const name = f.split('/').pop() ?? '';
+                  if (!f.startsWith(`${ASSET_DIR}/`) || !isGeoName(name)) return null;
+                  const progress = geoFetching[name];
+                  const have = !!files[f];
+                  return (
+                    <Button key={f} size="sm" variant="outline" disabled={!!progress || have} onClick={() => void fetchGeo(name)}>
+                      <CloudArrowDownIcon />
+                      {have
+                        ? t('results.geoReady', { name })
+                        : progress
+                          ? t('results.geoFetching', { name, pct: percent(progress.loaded, progress.total) })
+                          : t('results.fetchGeo', { name, size: formatBytes(GEO_FILES.find(g => g.name === name)?.approxBytes ?? 0, lang) })}
+                    </Button>
+                  );
+                })}
                 <Button size="sm" variant="outline" onClick={() => onAttach(r.missingFiles ?? [])}>
                   <FileArrowUpIcon />
-                  {(r.missingFiles ?? []).every(f => f.startsWith(`${ASSET_DIR}/geo`)) ? t('results.attachGeo') : t('results.attachFiles')}
+                  {t('results.attachFiles')}
                 </Button>
-                <Button size="sm" variant="ghost" disabled={!canRecheck} onClick={() => onRecheck(row.tag)}>
+                <Button size="sm" variant={allPresent ? 'default' : 'ghost'} disabled={!canRecheck} onClick={() => onRecheck(row.tag)}>
                   {t('results.recheck')}
                 </Button>
               </div>

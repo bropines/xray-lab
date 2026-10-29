@@ -6,45 +6,27 @@
  * `xray run -test -c config.json` sees them too.
  */
 import { CheckCircleIcon, CloudArrowDownIcon, GlobeHemisphereWestIcon, TrashIcon, UploadSimpleIcon, XIcon } from '@phosphor-icons/react';
-import { useRef, useState } from 'react';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from '../../components/ui';
 import { sessionFs, useFs } from '../../fs';
 import { useLang, useT } from '../../i18n';
 import { cn } from '../../lib/cn';
 import { pickFiles } from '../../lib/download';
 import { formatBytes, percent } from '../../lib/format';
-import { GEO_FILES, GEO_SOURCE_NAME, GEO_SOURCE_URL, fetchGeo, geoPath, looksLikeDat, type GeoName } from '../../lib/geo';
+import { GEO_FILES, GEO_SOURCE_NAME, GEO_SOURCE_URL, geoPath, looksLikeDat } from '../../lib/geo';
+import { useGeo } from './geo-store';
 
 interface Props {
   /** Which ones the config refers to (highlighted when missing). */
   needed: { geoip: boolean; geosite: boolean };
 }
 
-type Fetching = { loaded: number; total: number; error?: string };
-
 export function GeoFilesCard({ needed }: Props) {
   const t = useT();
   const lang = useLang(s => s.lang);
   const files = useFs(s => s.files);
-  const [fetching, setFetching] = useState<Partial<Record<GeoName, Fetching>>>({});
-  const [errors, setErrors] = useState<Partial<Record<GeoName, string>>>({});
-  const controllers = useRef(new Map<GeoName, AbortController>());
-
-  const fetchOne = async (name: GeoName) => {
-    const ctrl = new AbortController();
-    controllers.current.set(name, ctrl);
-    setErrors(e => ({ ...e, [name]: undefined }));
-    setFetching(f => ({ ...f, [name]: { loaded: 0, total: GEO_FILES.find(g => g.name === name)?.approxBytes ?? 0 } }));
-    try {
-      const data = await fetchGeo(name, (loaded, total) => setFetching(f => ({ ...f, [name]: { loaded, total } })), ctrl.signal);
-      sessionFs.write(geoPath(name), data);
-    } catch (e) {
-      if (!ctrl.signal.aborted) setErrors(er => ({ ...er, [name]: e instanceof Error ? e.message : String(e) }));
-    } finally {
-      controllers.current.delete(name);
-      setFetching(f => ({ ...f, [name]: undefined }));
-    }
-  };
+  const fetching = useGeo(s => s.fetching);
+  const errors = useGeo(s => s.errors);
+  const { fetch: fetchOne, cancel, setError } = useGeo.getState();
 
   const upload = async () => {
     const picked = await pickFiles({ accept: '.dat', multiple: true });
@@ -52,7 +34,7 @@ export function GeoFilesCard({ needed }: Props) {
       const data = new Uint8Array(await f.arrayBuffer());
       const name = /geosite/i.test(f.name) ? 'geosite.dat' : /geoip/i.test(f.name) ? 'geoip.dat' : f.name;
       if (!looksLikeDat(data)) {
-        setErrors(er => ({ ...er, [name as GeoName]: t('geo.notDat', { name: f.name }) }));
+        setError(name, t('geo.notDat', { name: f.name }));
         continue;
       }
       sessionFs.write(geoPath(name), data);
@@ -94,12 +76,12 @@ export function GeoFilesCard({ needed }: Props) {
                         <TrashIcon />
                       </Button>
                     ) : f ? (
-                      <Button size="sm" variant="ghost" className="h-7" onClick={() => controllers.current.get(g.name)?.abort()}>
+                      <Button size="sm" variant="ghost" className="h-7" onClick={() => cancel(g.name)}>
                         <XIcon />
                         {t('common.cancel')}
                       </Button>
                     ) : (
-                      <Button size="sm" variant="outline" className="h-7" onClick={() => fetchOne(g.name)}>
+                      <Button size="sm" variant="outline" className="h-7" onClick={() => void fetchOne(g.name)}>
                         <CloudArrowDownIcon />
                         {t('geo.fetch', { size: formatBytes(g.approxBytes, lang) })}
                       </Button>
