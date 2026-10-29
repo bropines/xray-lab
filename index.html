@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>Xray Lab — the real Xray-core in your browser</title>
+    <meta name="description" content="Check Xray configs on several core versions, run the xray CLI in a terminal and generate keys — with the real Xray-core compiled to WebAssembly. Runs locally; nothing is uploaded." />
+    <meta name="author" content="bropines" />
+    <link rel="canonical" href="https://bropines.github.io/xray-lab/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bropines.github.io/xray-lab/" />
+    <meta property="og:title" content="Xray Lab — the real Xray-core in your browser" />
+    <meta property="og:description" content="Config checker, xray CLI terminal and key tools, running Xray-core in WebAssembly. Local, private, open source." />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="theme-color" content="#09090b" />
+    <!-- The saved theme (src/app/theme.ts), applied before the first paint so
+         a light-theme viewer never sees a dark flash. Key and values must
+         match that module. -->
+    <script>
+      (function () {
+        var pref = null;
+        try { pref = localStorage.getItem('xray-lab-theme'); } catch (e) {}
+        var systemDark = !window.matchMedia || window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var dark = pref === 'dark' || (pref !== 'light' && systemDark);
+        document.documentElement.classList.toggle('dark', dark);
+        var lang = null;
+        try { lang = localStorage.getItem('xray-lab-lang'); } catch (e) {}
+        if (!lang) {
+          var l = ((navigator.languages && navigator.languages[0]) || navigator.language || 'en').toLowerCase();
+          lang = /^(ru|uk|be|kk)\b/.test(l) ? 'ru' : 'en';
+        }
+        document.documentElement.lang = lang;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Xray Lab runs Xray-core in your browser and needs JavaScript and WebAssembly.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

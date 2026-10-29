@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+# Core binaries are never committed: dev serves ../xray-wasm/dist-wasm,
+# `bun run wasm:local` copies them here, CI downloads them from a release.
+public/xray-wasm/
+vendor/
+*.tgz
+*.wasm
+*.wasm.gz

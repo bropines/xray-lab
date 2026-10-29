@@ -1,0 +1,66 @@
+{
+  "name": "xray-lab",
+  "version": "1.0.0",
+  "description": "The real Xray-core in your browser: check configs on several core versions, run the xray CLI, generate keys. Static, local, nothing uploaded.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://bropines.github.io/xray-lab/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bropines/xray-lab.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:fake": "VITE_FAKE_ENGINE=1 vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "bun test",
+    "wasm:local": "bun run scripts/link-local-wasm.ts"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.10.3",
+    "@codemirror/lang-json": "6.0.2",
+    "@codemirror/language": "6.12.3",
+    "@codemirror/lint": "6.9.5",
+    "@codemirror/search": "6.7.0",
+    "@codemirror/state": "6.6.0",
+    "@codemirror/theme-one-dark": "6.1.3",
+    "@codemirror/view": "6.41.1",
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@phosphor-icons/react": "2.1.10",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "radix-ui": "1.8.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "3.5.0",
+    "tw-animate-css": "1.4.0",
+    "zustand": "5.0.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@happy-dom/global-registrator": "20.14.5",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/bun": "1.3.13",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.2.0",
+    "eslint": "10.9.1",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.5",
+    "globals": "17.11.0",
+    "tailwindcss": "4.2.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.68.0",
+    "vite": "7.3.6"
+  },
+  "optionalDependencies": {
+    "xray-wasm": "file:../xray-wasm"
+  }
+}
