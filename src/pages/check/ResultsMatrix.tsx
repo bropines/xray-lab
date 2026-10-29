@@ -25,6 +25,19 @@ import { formatBytes, formatMs, percent } from '../../lib/format';
 import type { Row } from './check-store';
 import { VERDICT_LABEL, VERDICT_STYLE } from './verdicts';
 
+/**
+ * The core's errors are a chain, outermost first: "main: failed to load
+ * config files: [config.json] > infra/conf: … > unknown config id: freedum".
+ * The last link is the one that says what is wrong; the full chain is one
+ * click away.
+ */
+function errorSummary(error: string | undefined): string {
+  if (!error) return '';
+  const first = error.split('\n')[0] ?? '';
+  const links = first.split(' > ');
+  return links[links.length - 1]?.trim() || first;
+}
+
 interface Props {
   rows: Row[];
   builds: BuildInfo[];
@@ -150,7 +163,7 @@ function ResultRow({
           : t('results.okLine', { time: formatMs(r.durationMs) })
         : r.verdict === 'inconclusive'
           ? t('results.missingLine', { files: (r.missingFiles ?? []).map(f => f.split('/').pop()).join(', ') || '?' })
-          : (r.error?.split('\n')[0] ?? '');
+          : errorSummary(r.error);
   }
 
   const header = (

@@ -6,8 +6,9 @@
  * does itself — so no two visitors get the same one and nothing in the repo
  * is a real key. Names are example.com and private addresses only.
  *
- * It carries a comment and a trailing comma on purpose: the checker strips
- * them and says so.
+ * It carries comments on purpose: the checker strips them and says so, and
+ * the core itself reads them too, so `xray run -test -c config.json` in the
+ * terminal loads the same text. (A trailing comma it would refuse.)
  */
 function b64url(bytes: Uint8Array): string {
   let s = '';
@@ -53,7 +54,7 @@ export function exampleConfig(): string {
   ],
   "outbounds": [
     { "tag": "direct", "protocol": "freedom" },
-    { "tag": "block", "protocol": "blackhole" },
+    { "tag": "block", "protocol": "blackhole" }
   ],
   "routing": {
     "rules": [

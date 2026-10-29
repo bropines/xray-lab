@@ -99,6 +99,8 @@ export default function TerminalPage() {
   const shellRef = useRef<Shell | null>(null);
   const editorRef = useRef<LineEditor | null>(null);
   const feedRef = useRef<(data: string) => void>(() => {});
+  /** A command is running: keys other than Ctrl+C wait, the prompt is not redrawn. */
+  const busyRef = useRef(false);
   const [editing, setEditing] = useState<string | null>(null);
   const setTagRef = useRef(setTag);
   useEffect(() => {
@@ -153,23 +155,22 @@ export default function TerminalPage() {
     });
     editorRef.current = editor;
 
-    let busy = false;
     let runId = 0;
     const execute = async (lines: string[]) => {
       for (const line of lines) {
         const id = ++runId;
-        busy = true;
+        busyRef.current = true;
         await shell.execute(line);
         if (id !== runId) return; // interrupted: the prompt is already back
-        busy = false;
+        busyRef.current = false;
       }
       editor.start();
     };
     const feed = (data: string) => {
-      if (busy) {
+      if (busyRef.current) {
         if (data.includes('\x03')) {
           runId++;
-          busy = false;
+          busyRef.current = false;
           shell.interrupt();
           shell.lastExit = 130;
           term.write('^C\r\n');
@@ -233,7 +234,8 @@ export default function TerminalPage() {
     const shell = shellRef.current;
     if (!shell || !tag || shell.tag === tag) return;
     shell.tag = tag;
-    editorRef.current?.refresh();
+    // Before the terminal is open the prompt has not been drawn yet.
+    if (termRef.current?.element && !busyRef.current) editorRef.current?.refresh();
   }, [tag]);
 
   const send = useCallback((data: string) => {

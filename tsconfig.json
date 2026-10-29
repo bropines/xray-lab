@@ -14,14 +14,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "types": ["bun", "vite/client"],
-    // `xray-wasm` is an optional dependency: while the library is not
-    // installed (a fresh clone next to no ../xray-wasm), its types fall back
-    // to src/engine/missing-lib.ts, which has the same shape and fails at run
-    // time with `unavailable`. vite.config.ts does the same for the bundle.
-    "paths": {
-      "xray-wasm": ["./node_modules/xray-wasm", "./src/engine/missing-lib.ts"]
-    }
+    "types": ["bun", "vite/client"]
   },
   "include": ["src", "scripts", "test-setup.ts", "vite.config.ts", "eslint.config.js"]
 }

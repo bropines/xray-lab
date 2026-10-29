@@ -6,11 +6,10 @@
  * first use as a chunk of its own.
  *
  * Where the cores come from (`baseUrl`, the folder holding manifest.json):
- *   1. `VITE_XRAY_WASM_BASE` when set at build time — an absolute URL, or a
- *      path relative to the page (`./xray-wasm/` to serve copies alongside);
- *   2. in dev, `<base>xray-wasm/` — vite.config.ts serves ../xray-wasm/dist-wasm there;
- *   3. otherwise the library's own GitHub Pages, which sends
- *      `Access-Control-Allow-Origin: *`.
+ * `VITE_XRAY_WASM_BASE` when set at build time — an absolute URL, or a path
+ * relative to the page (`./xray-wasm/` to serve copies alongside; `bun run
+ * dev:local` serves ../xray-wasm/dist-wasm there) — else the library's own
+ * GitHub Pages, which sends `Access-Control-Allow-Origin: *`.
  */
 import { useStore } from 'zustand';
 import { Engine, type EngineState } from './engine';
@@ -20,9 +19,7 @@ export const LIBRARY_PAGES_URL = 'https://bropines.github.io/xray-wasm/';
 
 export const ENGINE_KIND: 'real' | 'fake' = import.meta.env.VITE_FAKE_ENGINE === '1' ? 'fake' : 'real';
 
-export const WASM_BASE_URL: string =
-  import.meta.env.VITE_XRAY_WASM_BASE ||
-  (import.meta.env.DEV ? `${import.meta.env.BASE_URL}xray-wasm/` : LIBRARY_PAGES_URL);
+export const WASM_BASE_URL: string = import.meta.env.VITE_XRAY_WASM_BASE || LIBRARY_PAGES_URL;
 
 const cache = createWasmCache({ abortSignal: () => engine.signal });
 

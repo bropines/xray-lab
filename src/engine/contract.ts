@@ -6,8 +6,9 @@
  * real one are interchangeable. `real.ts` assigns the library's functions to
  * these types, which is where a drift between the two would fail `tsc`.
  *
- * `channel` and `publishedAt` are optional: manifests made before the library
- * grew them have neither, and versions.ts falls back to a guess.
+ * Fields the site does not need to work are optional: a manifest made before
+ * the library grew `channel` and `publishedAt` has neither, and versions.ts
+ * falls back to a guess.
  */
 export type Verdict = 'ok' | 'error' | 'inconclusive' | 'crashed' | 'timeout' | 'unavailable';
 
@@ -21,7 +22,16 @@ export interface BuildInfo {
   gzip: number;
   sha256: string;
   channel?: Channel;
+  /** ISO 8601; for a withdrawn release, its commit date. */
   publishedAt?: string;
+  /** The uncompressed binary, for hosts without DecompressionStream. */
+  rawFile?: string;
+  gzipSha256?: string;
+  /** Xray-core commit the binary was built from. */
+  commit?: string;
+  /** Go release that built it. */
+  go?: string;
+  shims?: string[];
 }
 
 export interface Manifest {
@@ -49,6 +59,8 @@ export interface RunResult {
   durationMs: number;
   tag: string;
   timedOut?: boolean;
+  /** stdout as bytes, for a command that prints binary (`convert pb` without -o). */
+  stdoutBytes?: Uint8Array;
 }
 
 export interface XrayOptions {
@@ -56,6 +68,8 @@ export interface XrayOptions {
   baseUrl: string | URL;
   fetch?: typeof fetch;
   worker?: boolean;
+  /** Where the worker script is (default: next to the library's module). */
+  workerUrl?: string | URL;
 }
 
 export interface CallOptions {
@@ -65,7 +79,7 @@ export interface CallOptions {
 }
 
 export interface RunOptions extends CallOptions {
-  stdin?: string;
+  stdin?: string | Uint8Array;
   cwd?: string;
 }
 

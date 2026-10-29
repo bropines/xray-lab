@@ -16,27 +16,11 @@ try {
 } catch { /* not a checkout */ }
 
 /**
- * `xray-wasm` is an optional dependency (see package.json and the README).
- * When it is not installed the import resolves to src/engine/missing-lib.ts,
- * which loads nothing and reports every core as `unavailable` — so a fresh
- * clone still builds, and `VITE_FAKE_ENGINE=1` needs nothing at all.
- */
-const xrayWasmFallback = (): Plugin => {
-  const installed = existsSync(join(root, 'node_modules/xray-wasm/package.json'));
-  return {
-    name: 'xray-lab:xray-wasm-fallback',
-    enforce: 'pre',
-    resolveId(source) {
-      if (source === 'xray-wasm' && !installed) return join(root, 'src/engine/missing-lib.ts');
-      return null;
-    },
-  };
-};
-
-/**
  * Serves core binaries at `<base>xray-wasm/` in dev and preview, from the
  * library's own build output next to this repo (`../xray-wasm/dist-wasm`) or
- * from XRAY_WASM_DIR. Nothing is copied: the files stay out of this repo.
+ * from XRAY_WASM_DIR. Used by `bun run dev:local` (which points
+ * VITE_XRAY_WASM_BASE there); by default the site loads the cores from the
+ * library's GitHub Pages. Nothing is copied into this repo.
  */
 const TYPES: Record<string, string> = {
   '.json': 'application/json',
@@ -70,8 +54,9 @@ const localWasm = (): Plugin => {
 };
 
 /**
- * With `file:../xray-wasm` the package is a link to a folder outside this
- * repo; Vite serves files from there (the worker module) only when allowed.
+ * When the library is installed from a local checkout (`bun add ../xray-wasm`)
+ * the package is a link to a folder outside this repo; Vite serves files from
+ * there (the worker module) only when allowed.
  */
 const fsAllow = [root];
 try {
@@ -83,7 +68,7 @@ try {
 
 export default defineConfig({
   base: BASE,
-  plugins: [xrayWasmFallback(), localWasm(), react(), tailwindcss()],
+  plugins: [localWasm(), react(), tailwindcss()],
   define: {
     __APP_VERSION__: JSON.stringify(`${process.env.npm_package_version ?? '0.0.0'}-${gitHash}`),
   },
